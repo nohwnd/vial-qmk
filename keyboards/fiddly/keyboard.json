@@ -18,6 +18,9 @@
     },
     "split": { 
         "enabled": true,
+        "bootmagic": {
+            "matrix": [5, 0]
+        },
         "serial": {
             "driver": "vendor",
             "pin": "GP26"
