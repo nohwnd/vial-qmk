@@ -100,3 +100,32 @@ Did **not** run the `id_eeprom_reset` test: it calls `eeconfig_init_via()` only,
 skipping `eeconfig_init_user()`, so it would have reset the tuning to 200/200.
 
 **Nothing is running in the background.**
+
+---
+
+## 2026-09-09 19:20 — prove the value really comes from the firmware
+
+**Why:** so far the firmware set the same numbers the EEPROM already had, so a
+correct reading proved nothing on its own.
+
+**About to do:** put `tapping_term = 333` in `eeconfig_init_user`, build, flash,
+and read it back. 333 is a value nothing else in the tree produces, so seeing it
+can only mean the firmware wrote it. Then set it back to 400 and flash again.
+
+**Result:** the board reads `tapping_term 333`. Nothing else in the tree
+produces that number, so the firmware demonstrably wrote it during
+`eeconfig_init_user`. Proven, not inferred.
+
+Reverting to 400 and flashing again.
+
+---
+
+## 2026-09-09 19:26 — reverted and installed Vial
+
+**Done:** tapping_term back to 400, rebuilt, flashed, board reads 400.
+The 333 -> 400 round trip proves the value comes from the firmware.
+
+Vial 0.7.5 portable extracted to `vial\Vial\Vial.exe` and running. It is a
+standalone app; it needs no QMK toolchain.
+
+**Nothing is running in the background.**
