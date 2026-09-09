@@ -1,7 +1,7 @@
 {
   "matrix": {
     "rows": 11,
-    "cols": 12    
+    "cols": 12
   },
   "customKeycodes": [
     {
@@ -23,6 +23,11 @@
       "name": "CTRL_SHIFT_TAB",
       "title": "Ctrl+Shift+Tab",
       "shortName": "CtrlST"
+    },
+    {
+      "name": "GRV_DICT",
+      "title": "Grave / hold to dictate (Ctrl+Space)",
+      "shortName": "Dict"
     }
   ],
   "layouts": {
