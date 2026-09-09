@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "print.h"
+#include "qmk_settings.h"
 
 #include QMK_KEYBOARD_H
 
@@ -230,4 +231,30 @@ void matrix_scan_user(void) {
     register_code(KC_LEFT_CTRL);
     register_code(KC_SPACE);
   }
+}
+
+
+/* Vial keeps the tap-hold tuning in EEPROM, and a flash resets it, so these
+ * values used to have to be dialled back in by hand every time.
+ *
+ * eeconfig_init_user runs after eeconfig_init_via has already reset the
+ * settings, so writing them here makes a freshly flashed board come up usable.
+ * It only runs when the EEPROM is initialised, so later tuning through Vial or
+ * tools/qmk-settings.py is not clobbered on every boot.
+ *
+ * Only these two differ from what qmk_settings_reset produces:
+ *
+ * quick_tap_term must be 0. qmk_settings_reset derives it from TAPPING_TERM and
+ * never reads QUICK_TAP_TERM, so config.h cannot set it. At any non-zero value,
+ * typing a space and then holding space again within that window reads as a
+ * repeated tap, so the thumb layer never engages and the space auto-repeats.
+ *
+ * tapping_term is 400 rather than 200 to leave room for a deliberate tap.
+ */
+void eeconfig_init_user(void) {
+    uint16_t tapping_term   = 400;
+    uint16_t quick_tap_term = 0;
+
+    qmk_settings_set(7, &tapping_term, sizeof(tapping_term));
+    qmk_settings_set(25, &quick_tap_term, sizeof(quick_tap_term));
 }
