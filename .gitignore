@@ -1,0 +1,6 @@
+.build/
+*.uf2
+*.bin
+*.hex
+.probe-env.sh
+.setup-venv.sh

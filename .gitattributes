@@ -1,0 +1,8 @@
+# QMK sources must use LF, they are compiled under WSL/Linux.
+* text=auto eol=lf
+
+# Vial layout exports are treated as opaque.
+*.vil -text
+*.uf2 binary
+*.bin binary
+*.hex binary
