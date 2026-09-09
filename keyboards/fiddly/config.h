@@ -25,7 +25,11 @@
 // #define WS2812_BYTE_ORDER WS2812_BYTE_ORDER_RGB
 // #define RGB_MATRIX_DEFAULT_VAL 32
 
-// default is 5 which makes my 's' key double tap
+// The default sym_defer_pk waits out the whole debounce window after the last
+// transition, so every keypress carries that delay. sym_eager_pk reports the
+// press immediately and then ignores the pin for the window instead, which
+// keeps the chatter filtering that a bare DEBOUNCE 5 lost (it made 's' repeat)
+// while removing the latency.
 #define DEBOUNCE 10
 
 #define MASTER_RIGHT

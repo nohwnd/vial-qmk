@@ -165,3 +165,19 @@ Seven messages arrived while I was mid-step. Working through them:
 the .vil settings blocks against each other.
 
 **Result:** pending.
+
+---
+
+## 2026-09-09 19:44 — v5: eager debounce
+
+**Changed:** `DEBOUNCE_TYPE = sym_eager_pk` in rules.mk. Kept DEBOUNCE at 10;
+lowering it to 5 is what made 's' repeat, per the comment in config.h.
+
+sym_defer_pk waits the window out after the last transition, so every press
+carries 10 ms. sym_eager_pk reports the press immediately and then ignores the
+pin for the window, so the filtering stays and the latency goes.
+
+Flashed. All three tuning values came back from the firmware on their own,
+including hold_on_other_key_press.
+
+**Nothing is running in the background.**
