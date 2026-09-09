@@ -129,3 +129,39 @@ Vial 0.7.5 portable extracted to `vial\Vial\Vial.exe` and running. It is a
 standalone app; it needs no QMK toolchain.
 
 **Nothing is running in the background.**
+
+---
+
+## 2026-09-09 19:27 — layer waits before firing
+
+**Symptom:** space + P + P does not delete straight away, it waits.
+
+**Cause:** tapping_term is 400 and hold_on_other_key_press is 0, so QMK holds the
+decision until the term expires instead of committing to the hold as soon as a
+second key arrives.
+
+**About to do:** set hold_on_other_key_press to 1 live, so it can be felt before
+deciding whether to bake it into the firmware.
+
+**Result:** confirmed better, "mnohem min liny". Baking it into the firmware.
+
+---
+
+## 2026-09-09 19:31 — queued requests
+
+Seven messages arrived while I was mid-step. Working through them:
+
+1. Matrix tester works now — that follows from the vial.json matrix fix
+   (11x12 -> 10x7), so Vial reads the right addresses.
+2. hold_on_other_key_press 1 confirmed better -> bake into firmware.
+3. Question: is there still a delay when not pressing space.
+4. Question: what tapping term 200 actually means.
+5. Tapping term appears in two places in Vial.
+6. Compare the older .vil files and the commit history to infer what was
+   originally tuned.
+7. Write a README in English.
+
+**About to do:** add hold_on_other_key_press to eeconfig_init_user, then diff
+the .vil settings blocks against each other.
+
+**Result:** pending.

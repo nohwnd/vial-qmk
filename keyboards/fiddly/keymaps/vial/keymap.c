@@ -250,11 +250,17 @@ void matrix_scan_user(void) {
  * repeated tap, so the thumb layer never engages and the space auto-repeats.
  *
  * tapping_term is 400 rather than 200 to leave room for a deliberate tap.
+ *
+ * hold_on_other_key_press commits to the hold the moment a second key arrives
+ * instead of waiting out the term, which a 400 ms term otherwise makes felt as
+ * a lag before the layer responds.
  */
 void eeconfig_init_user(void) {
     uint16_t tapping_term   = 400;
     uint16_t quick_tap_term = 0;
+    uint8_t  hold_on_other  = 1;
 
     qmk_settings_set(7, &tapping_term, sizeof(tapping_term));
     qmk_settings_set(25, &quick_tap_term, sizeof(quick_tap_term));
+    qmk_settings_set(23, &hold_on_other, sizeof(hold_on_other));
 }
