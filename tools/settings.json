@@ -1,0 +1,66 @@
+{
+  "1": {
+    "name": "grave_esc_override",
+    "value": 0
+  },
+  "2": {
+    "name": "combo_term",
+    "value": 50
+  },
+  "3": {
+    "name": "auto_shift",
+    "value": 0
+  },
+  "4": {
+    "name": "auto_shift_timeout",
+    "value": 175
+  },
+  "5": {
+    "name": "osk_tap_toggle",
+    "value": 5
+  },
+  "6": {
+    "name": "osk_timeout",
+    "value": 5000
+  },
+  "7": {
+    "name": "tapping_term",
+    "value": 400
+  },
+  "18": {
+    "name": "tap_code_delay",
+    "value": 0
+  },
+  "19": {
+    "name": "tap_hold_caps_delay",
+    "value": 80
+  },
+  "20": {
+    "name": "tapping_toggle",
+    "value": 5
+  },
+  "22": {
+    "name": "permissive_hold",
+    "value": 0
+  },
+  "23": {
+    "name": "hold_on_other_key_press",
+    "value": 0
+  },
+  "24": {
+    "name": "retro_tapping",
+    "value": 0
+  },
+  "25": {
+    "name": "quick_tap_term",
+    "value": 0
+  },
+  "26": {
+    "name": "chordal_hold",
+    "value": 0
+  },
+  "27": {
+    "name": "flow_tap_term",
+    "value": 0
+  }
+}

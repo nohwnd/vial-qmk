@@ -5,12 +5,15 @@ EEPROM rather than in the firmware, so flashing resets them and any tuning
 done through Vial is lost without a reflash being able to bring it back.
 
     python qmk-settings.py                 # read the tap-hold settings
-    python qmk-settings.py --classic       # restore pre-2025 tap-hold behaviour
+    python qmk-settings.py --save          # store them next to this script
+    python qmk-settings.py --restore       # write a saved set back
     python qmk-settings.py --set 7=200     # set one setting by id
 """
 
 import argparse
+import json
 import time
+from pathlib import Path
 
 from pywinusb import hid
 
@@ -21,6 +24,8 @@ RAW_USAGE_ID = 0x61
 VIAL_PREFIX = 0xFE
 SETTINGS_GET = 0x0A
 SETTINGS_SET = 0x0B
+
+SAVE_FILE = Path(__file__).with_name("settings.json")
 
 # qsid -> (label, byte width). Widths follow the field types in qmk_settings.h.
 SETTINGS = {
@@ -109,8 +114,10 @@ def show(link, everything=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--classic", action="store_true",
-                        help="turn chordal_hold and flow_tap_term off")
+    parser.add_argument("--save", action="store_true",
+                        help="write the current settings to settings.json")
+    parser.add_argument("--restore", action="store_true",
+                        help="apply the settings stored in settings.json")
     parser.add_argument("--all", action="store_true",
                         help="show every setting, not just the tap-hold ones")
     parser.add_argument("--set", metavar="ID=VALUE", action="append", default=[],
@@ -118,7 +125,24 @@ def main():
     args = parser.parse_args()
 
     with Link() as link:
-        changes = dict(CLASSIC) if args.classic else {}
+        if args.save:
+            saved = {}
+            for qsid in sorted(SETTINGS):
+                label, width = SETTINGS[qsid]
+                status, value = link.get(qsid, width)
+                if status == 0:
+                    saved[str(qsid)] = {"name": label, "value": value}
+            SAVE_FILE.write_text(json.dumps(saved, indent=2) + "\n", encoding="utf-8")
+            print(f"Saved {len(saved)} settings to {SAVE_FILE.name}")
+            return
+
+        changes = {}
+        if args.restore:
+            if not SAVE_FILE.exists():
+                raise SystemExit(f"{SAVE_FILE.name} not found. Run --save first.")
+            for qsid, entry in json.loads(SAVE_FILE.read_text()).items():
+                changes[int(qsid)] = entry["value"]
+
         for item in args.set:
             qsid, _, value = item.partition("=")
             changes[int(qsid)] = int(value)
@@ -135,7 +159,11 @@ def main():
                 raise SystemExit(f"Unknown setting id {qsid}.")
             label, width = SETTINGS[qsid]
             link.set(qsid, width, value)
-            print(f"\nset {label} = {value}")
+            if not args.restore:
+                print(f"\nset {label} = {value}")
+
+        if args.restore:
+            print(f"\nrestored {len(changes)} settings from {SAVE_FILE.name}")
 
         time.sleep(0.3)
         print("\nafter:")

@@ -45,9 +45,21 @@ over the VIA raw-HID protocol, which addresses keys as (layer, row, column)
 resolved firmware-side and so is unaffected by what vial.json declares.
 
 ```bash
-python tools/capture-keymap.py            # show the live keymap as C
-python tools/capture-keymap.py --write    # write it back into keymap.c
+python tools/capture-keymap.py --write    # keymap  -> keymap.c
+python tools/qmk-settings.py --save       # tuning  -> tools/settings.json
 ```
+
+After flashing, put the tuning back:
+
+```bash
+python tools/qmk-settings.py --restore
+```
+
+The tuning matters because `qmk_settings_reset` derives `quick_tap_term`
+from `TAPPING_TERM` and never reads `QUICK_TAP_TERM`, so the 0 in config.h
+has no effect and every reset lands on a value that breaks the thumb layer
+key: a space followed by a held space inside that window reads as a repeated
+tap, so the layer never engages and the space auto-repeats instead.
 
 Capture before flashing, otherwise the EEPROM reset discards whatever was
 tweaked in Vial since the last capture.
