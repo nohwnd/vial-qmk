@@ -1,0 +1,22 @@
+diff --git a/platforms/chibios/drivers/vendor/RP/RP2040/serial_vendor.c b/platforms/chibios/drivers/vendor/RP/RP2040/serial_vendor.c
+index 3aa8e116..98dc5f57 100644
+--- a/platforms/chibios/drivers/vendor/RP/RP2040/serial_vendor.c
++++ b/platforms/chibios/drivers/vendor/RP/RP2040/serial_vendor.c
+@@ -186,7 +186,16 @@ static inline void leave_rx_state(void) {}
+  */
+ inline void serial_transport_driver_clear(void) {
+     osalSysLock();
+-    while (!pio_sm_is_rx_fifo_empty(pio, rx_state_machine)) {
++    /* Bounded on purpose. Interference on the half-duplex wire can refill the
++     * RX FIFO as fast as this drains it, and the master runs this before every
++     * transaction while holding the system lock, so an unbounded loop takes the
++     * whole firmware down until power is removed rather than just dropping a
++     * transaction. The FIFO is 8 entries deep, so a legitimate drain never
++     * needs more than a couple of passes. */
++    for (uint8_t attempts = 0; attempts < 16; attempts++) {
++        if (pio_sm_is_rx_fifo_empty(pio, rx_state_machine)) {
++            break;
++        }
+         pio_sm_clear_fifos(pio, rx_state_machine);
+     }
+     osalSysUnlock();

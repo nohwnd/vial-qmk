@@ -181,3 +181,20 @@ Flashed. All three tuning values came back from the firmware on their own,
 including hold_on_other_key_press.
 
 **Nothing is running in the background.**
+
+---
+
+## 2026-09-09 19:46 — bound the PIO clear loop
+
+**About to do:** patch `serial_transport_driver_clear` in vial-qmk to cap the
+number of drain attempts, generate a patch file into the repo so it survives
+re-cloning vial-qmk, build, flash.
+
+**Result:** patched, patch saved to `patches/0001-bound-pio-clear-loop.patch`,
+built as `fiddly_vial_v6.uf2`. Not flashed yet.
+
+**Untested:** whether this actually stops the freeze with a phone near the
+cable. The loop can no longer spin forever, which is provable from the code,
+but that the freeze had this cause is still inference.
+
+**Nothing is running in the background.**

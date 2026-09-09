@@ -177,3 +177,20 @@ and split gives the right half rows 5-9; row 0 there is the other hand's slot
 and is empty at that point.
 
 The RP2040 bootloader is in mask ROM, so a bad firmware cannot brick the board.
+
+## Patches against vial-qmk
+
+vial-qmk is meant to be disposable, so the one change made to it lives here and
+has to be reapplied after re-cloning:
+
+```bash
+cd ~/p/vial-qmk && git apply ~/p/fiddly/patches/*.patch
+```
+
+`0001-bound-pio-clear-loop.patch` caps the drain loop in
+`serial_transport_driver_clear`. The master runs that loop before every split
+transaction while holding the system lock, and it was unbounded: interference on
+the half-duplex wire can refill the RX FIFO as fast as it is drained, which
+takes the whole firmware down until power is removed rather than just losing a
+transaction. This is the suspected cause of the freeze when a phone sits near
+the cable, though that link is inferred and not yet confirmed on hardware.
