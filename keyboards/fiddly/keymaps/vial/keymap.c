@@ -38,18 +38,18 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* 1: NAV / FUNKCE */
     [1] = LAYOUT_split_3x6_3(
         // leva pulka
-        _______       , KC_F1         , KC_F2         , KC_F3         , KC_F4         , KC_F5         , XXXXXXX,
-        _______       , KC_ESC        , LCTL(LSFT(KC_P))     , CTRL_SHIFT_TAB, CTRL_TAB      , LCTL(KC_T)    , XXXXXXX,
-        KC_LCTL       , LCTL(KC_A)    , LCTL(KC_S)    , LCTL(KC_C)    , LCTL(KC_V)    , ALT_TAB       , XXXXXXX,
-        _______       , LCTL(KC_Z)    , LCTL(KC_X)    , _______       , LGUI(KC_V)    , ALT_SHIFT_TAB , XXXXXXX,
-        XXXXXXX       , XXXXXXX       , _______       , _______       , _______       , XXXXXXX       , XXXXXXX,
+        _______         , KC_F1           , KC_F2           , KC_F3           , KC_F4           , KC_F5           , XXXXXXX,
+        _______         , KC_ESC          , LCTL(LSFT(KC_P)), CTRL_SHIFT_TAB  , CTRL_TAB        , LCTL(KC_T)      , XXXXXXX,
+        KC_LCTL         , LCTL(KC_A)      , LCTL(KC_S)      , LCTL(KC_C)      , LCTL(KC_V)      , ALT_TAB         , XXXXXXX,
+        _______         , LCTL(KC_Z)      , LCTL(KC_X)      , _______         , LGUI(KC_V)      , ALT_SHIFT_TAB   , XXXXXXX,
+        XXXXXXX         , XXXXXXX         , _______         , _______         , _______         , XXXXXXX         , XXXXXXX,
 
         // prava pulka
-        KC_F6         , KC_F7         , KC_F8         , KC_F9         , KC_F10        , KC_F11        , KC_F12,
-        _______       , KC_HOME       , KC_UP         , KC_END        , KC_BSPC       , _______       , _______,
-        KC_ENT        , KC_LEFT       , KC_DOWN       , KC_RIGHT      , KC_ENT        , LCTL(KC_GRV)  , _______,
-        KC_BSPC       , KC_DEL        , LCTL(KC_LEFT) , LCTL(KC_RIGHT), _______       , _______       , _______,
-        XXXXXXX       , _______       , _______       , _______       , XXXXXXX       , XXXXXXX       , XXXXXXX
+        KC_F6           , KC_F7           , KC_F8           , KC_F9           , KC_F10          , KC_F11          , KC_F12,
+        _______         , KC_HOME         , KC_UP           , KC_END          , KC_BSPC         , _______         , _______,
+        KC_ENT          , KC_LEFT         , KC_DOWN         , KC_RIGHT        , KC_ENT          , LCTL(KC_GRV)    , _______,
+        KC_BSPC         , KC_DEL          , LCTL(KC_LEFT)   , LCTL(KC_RIGHT)  , _______         , _______         , _______,
+        XXXXXXX         , _______         , _______         , _______         , XXXXXXX         , XXXXXXX         , XXXXXXX
     ),
 
     /* 2: VRSTVA 2 */

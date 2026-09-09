@@ -36,3 +36,39 @@ Output lands in `~/p/fiddly/fiddly_vial.uf2`.
 
 Hold BOOTSEL, plug in the half, drag the .uf2 onto the `RPI-RP2` drive.
 The RP2040 bootloader is in mask ROM, so a bad firmware cannot brick the board.
+
+## Keeping the repo and the board in sync
+
+The keymap Vial edits lives in the board's EEPROM, and flashing resets it,
+so the board and the repo drift apart silently. `tools/` closes that loop
+over the VIA raw-HID protocol, which addresses keys as (layer, row, column)
+resolved firmware-side and so is unaffected by what vial.json declares.
+
+```bash
+python tools/capture-keymap.py            # show the live keymap as C
+python tools/capture-keymap.py --write    # write it back into keymap.c
+```
+
+Capture before flashing, otherwise the EEPROM reset discards whatever was
+tweaked in Vial since the last capture.
+
+Other tools:
+
+- `dump-keymap.py` - readable dump of all layers, both halves.
+- `watch-matrix.py` - live matrix view; shows whether both halves report.
+- `keymap-poke.py` - read or write one key; `--set-boot` puts QK_BOOT on a
+  spare thumb key, which is how to reach the bootloader without opening the
+  case when bootmagic cannot help.
+- `locate-key.py` - map a (row, col) back to a physical position.
+- `flash-when-ready.py` - wait for the RPI-RP2 drive and copy the firmware.
+
+### Which half can reach the bootloader
+
+`MASTER_RIGHT` derives handedness from `usb_bus_detected()`, so whichever
+half holds the USB cable acts as the right one and switches to the right
+pin set. On the left half that pin set does not match the wiring, so its
+matrix does not scan and neither bootmagic nor a QK_BOOT key can work
+there - the left half needs its physical BOOTSEL button.
+
+The right half is fine: `split.bootmagic.matrix` is now `[5, 0]`, so
+holding the key that types `6` while plugging in enters the bootloader.
