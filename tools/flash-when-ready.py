@@ -11,7 +11,7 @@ from pathlib import Path
 
 import subprocess
 
-FIRMWARE = Path(__file__).with_name("fiddly_vial_v2.uf2")
+FIRMWARE = Path(__file__).with_name("fiddly_vial_v3.uf2")
 TIMEOUT_SECONDS = 900
 
 
