@@ -156,14 +156,45 @@ python tools/qmk-settings.py --set 7=250
 The firmware only supplies what a freshly initialised EEPROM starts from, so
 live changes are not overwritten on the next boot.
 
+## Software on the host that fights the firmware
+
+TouchCursor turns Space into a modifier on an ordinary keyboard, which is the
+same thing `LT(1, KC_SPACE)` does here in firmware. It is worth having while
+this keyboard is apart, so the laptop keyboard behaves the same way, and it has
+to be turned off again once this keyboard is back. The two do not coexist.
+
+While it runs, holding grave for dictation looks broken. `Ctrl` arrives and is
+held for as long as the key is down, and the `Space` that should be held
+alongside it never reaches the host at all. TouchCursor swallows it and replays
+it as a tap once the key is released, so dictation appears to start late and
+stop immediately.
+
+`tools/watch-hid-raw.py` shows it in one run:
+
+```
+  time ms  key    edge   scan  source                 extraInfo
+   1855.8  LCtrl  down     29  real device            0x0
+   2854.2  LCtrl  up       29  real device            0x0
+   2870.4  Space  down     57  injected (SendInput)   0x54435552
+   2875.8  Space  up       57  injected (SendInput)   0x54435552
+```
+
+`0x54435552` is ASCII `TCUR`, the marker TouchCursor stamps on its own injected
+events. Anything reported as injected came from software on this machine, not
+from the keyboard.
+
+This is worth checking first when a macro misbehaves. Every other tool here
+reports what the firmware believes, and the firmware was right the whole time.
+
 ## Tools
 
-All of these need `pip install pywinusb`. Except for `watch-hid-keys.py` they
-talk to the board over the VIA raw-HID protocol, and address keys as
+All of these need `pip install pywinusb`. Except for the two `watch-hid-*.py`
+they talk to the board over the VIA raw-HID protocol, and address keys as
 (layer, row, column) resolved firmware-side, so they do not depend on what
-`vial.json` declares. `watch-hid-keys.py` is the odd one out: it listens on a
-Windows keyboard hook, so it shows what applications receive rather than what
-the board thinks it sent, which is what makes it useful for checking a macro.
+`vial.json` declares. The `watch-hid-*.py` pair are the odd ones out: they
+listen on a Windows keyboard hook, so they show what applications receive
+rather than what the board thinks it sent, which is what makes them useful for
+checking a macro.
 
 | Tool | Purpose |
 | --- | --- |
@@ -175,6 +206,7 @@ the board thinks it sent, which is what makes it useful for checking a macro.
 | `locate-key.py` | Map a (row, col) back to a physical position. |
 | `enter-bootloader.py` | Restart the half holding the cable into its bootloader, no case opening. |
 | `watch-hid-keys.py` | Log what Windows receives, to check a macro really sends what it should. |
+| `watch-hid-raw.py` | Same, with scan codes and injection flags, to catch software rewriting keys. |
 | `flash-when-ready.py` | Wait for the RPI-RP2 drive and copy the firmware onto it. |
 
 ## Flashing
