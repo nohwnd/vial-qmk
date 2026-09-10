@@ -178,6 +178,30 @@ and is empty at that point.
 
 The RP2040 bootloader is in mask ROM, so a bad firmware cannot brick the board.
 
+## Debounce
+
+`DEBOUNCE` is 20 ms, and the default `sym_defer_pk` algorithm is deliberate.
+
+A switch does not close cleanly: the contacts bounce for a few milliseconds and
+the firmware would read that as several presses. The debounce window is how long
+the pin is ignored after a transition, so it sets the shortest gap between two
+presses of the same key that still registers as two.
+
+At 20 ms that gap is far below what a finger can do. Deliberate double taps land
+around 60 to 80 ms, so nothing reachable by hand is lost.
+
+The value has moved around, and both directions were wrong:
+
+- `DEBOUNCE 5` let the `s` key repeat on its own. That is what the original
+  comment in config.h records.
+- `DEBOUNCE_TYPE = sym_eager_pk` reports the press immediately and only then
+  ignores the pin, which cuts the input delay. On these switches it let the
+  bounce through, and `b` and `r` started doubling. It is now removed.
+
+So the cost of 20 ms is 20 ms of input delay per press, and the benefit is that
+no key repeats by itself. If a key ever doubles again, that is a contact problem
+to fix with a soldering iron rather than a longer window.
+
 ## Patches against vial-qmk
 
 vial-qmk is meant to be disposable, so the one change made to it lives here and
