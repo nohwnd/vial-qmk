@@ -158,9 +158,12 @@ live changes are not overwritten on the next boot.
 
 ## Tools
 
-All of these talk to the board over the VIA raw-HID protocol and need
-`pip install pywinusb`. They address keys as (layer, row, column), resolved
-firmware-side, so they do not depend on what `vial.json` declares.
+All of these need `pip install pywinusb`. Except for `watch-hid-keys.py` they
+talk to the board over the VIA raw-HID protocol, and address keys as
+(layer, row, column) resolved firmware-side, so they do not depend on what
+`vial.json` declares. `watch-hid-keys.py` is the odd one out: it listens on a
+Windows keyboard hook, so it shows what applications receive rather than what
+the board thinks it sent, which is what makes it useful for checking a macro.
 
 | Tool | Purpose |
 | --- | --- |
@@ -170,6 +173,8 @@ firmware-side, so they do not depend on what `vial.json` declares.
 | `watch-matrix.py` | Live matrix view; shows whether both halves report. |
 | `keymap-poke.py` | Read or write one key. `--set-boot` puts `QK_BOOT` on a spare thumb key. |
 | `locate-key.py` | Map a (row, col) back to a physical position. |
+| `enter-bootloader.py` | Restart the half holding the cable into its bootloader, no case opening. |
+| `watch-hid-keys.py` | Log what Windows receives, to check a macro really sends what it should. |
 | `flash-when-ready.py` | Wait for the RPI-RP2 drive and copy the firmware onto it. |
 
 ## Flashing
@@ -190,6 +195,18 @@ Hold `` ` `` on the left or `6` on the right while plugging in, then:
 ```bash
 python tools/flash-when-ready.py
 ```
+
+Without touching the keyboard at all, the half that holds the cable can be sent
+to its bootloader over raw HID instead:
+
+```bash
+python tools/enter-bootloader.py --check    # look only, send nothing
+python tools/enter-bootloader.py            # ask first, then jump
+```
+
+That works because `rules.mk` sets `VIAL_INSECURE`, so `vial_unlocked` compiles
+to 1 and the VIA `id_bootloader_jump` command is always accepted. Holding the
+key while plugging in stays the fallback if the jump does not land.
 
 Changes to key handling only need the right half. The master runs
 `process_record_user` for keys on both halves, and the left half only reports
