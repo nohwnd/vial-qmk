@@ -198,3 +198,108 @@ cable. The loop can no longer spin forever, which is provable from the code,
 but that the freeze had this cause is still inference.
 
 **Nothing is running in the background.**
+
+---
+
+## 2026-09-10 09:24 — flashing v6 to both halves, left first
+
+**Correction to yesterday:** the slave calls `serial_transport_driver_clear` too,
+from `SlaveThread` on every failed transaction, which is exactly what happens
+during interference. The left half is more exposed to the freeze than the right,
+and it still runs the January 2025 firmware. So both halves need v6, not just
+the master.
+
+**Left half needs its physical BOOTSEL button.** Bootmagic and a QK_BOOT key
+cannot work there: with USB plugged in it reports as the right half and switches
+to that pin set, which does not match its wiring. Measured yesterday, not
+inferred — watch-matrix.py saw 0 left-half keys while it was the USB half.
+
+**About to do:** point flash-when-ready.py at v6, wait for the left half in
+bootloader, then repeat for the right.
+
+**Result:** paused for a meeting. Nothing flashed, watcher stopped.
+
+**Tilde question settled from the code.** `bootmagic_should_reset` reads row 0
+unless `!is_keyboard_left()`, and with `MASTER_RIGHT` the half holding USB is
+always the master, so `is_keyboard_left()` is always false for it. Row 5 is
+therefore always the one checked and row 0 never is. `6` works, tilde cannot,
+on either half. The remembered tilde behaviour is probably from the other
+keyboard, the one with a single controller.
+
+**State:** board runs v5 and works. v6 adds only the bounded PIO loop, so
+nothing is urgent.
+
+**To resume:** run `python flash-when-ready.py`, then hold `6` and plug in the
+right half. The left half needs its physical BOOTSEL button.
+
+**Nothing is running in the background.**
+
+---
+
+## 2026-09-10 09:53 — how to flash the left half
+
+Checked three routes.
+
+**Double-tap reset:** the board config `GENERIC_PROMICRO_RP2040` does define
+`RP2040_BOOTLOADER_DOUBLE_TAP_RESET`, in both the old and the new firmware, so
+the mechanism exists. The window is 200 ms, which is too short to hit by hand,
+and it expects a reset button rather than a power cycle. `_TIMEOUT` can be
+raised, but only by flashing, which is the problem being solved.
+
+**RPC over the split link:** `transaction_register_rpc` lets the master send a
+command the slave acts on, so the slave could jump to its own bootloader. This
+needs the RPC present in *both* firmwares. The left half runs January 2025 code
+that has no such handler, so it cannot help this time. It would work for every
+flash after the left half has been flashed once.
+
+**Physical BOOTSEL:** works now, needs the case open.
+
+So: this one time the case has to come open, or the left half stays on the old
+firmware. Adding the RPC now means it is the last time.
+
+**Note:** the left half being on old firmware is not currently causing trouble.
+The split wire format is unchanged and it works as a slave.
+
+---
+
+## 2026-09-10 09:56 — left half flashed with v6
+
+Copy succeeded. The half did not re-enumerate as a keyboard afterwards, which is
+expected rather than a failure: with USB plugged into the left half, MASTER_RIGHT
+makes it act as the right one and switch to the GP4-GP8 pin set, which does not
+match its wiring, so its matrix never scans.
+
+Next: move the cable back to the right half, reconnect the TRRS, verify both
+halves report through watch-matrix.py, then flash the right half with v6 too.
+
+---
+
+## 2026-09-10 10:35 — left half: the flash chip is failing
+
+**Conclusion: hardware, not firmware.** Jakub called it; I spent too long on code.
+
+Evidence:
+
+| Runs from RAM | Works |
+| --- | --- |
+| ROM bootloader, RPI-RP2 mass storage | yes, every time |
+| flash_nuke | yes, completed |
+
+| Runs from flash | Works |
+| --- | --- |
+| any firmware: BASELINE, v6, MASTER_LEFT, LED test | no |
+
+The board now stays in the bootloader after a valid .uf2 is written, meaning the
+write itself does not take. That also happened on the very first left-half flash
+today, which I wrongly called expected at the time.
+
+What I ruled out along the way, all by diffing the January 2025 tree against the
+current one: USB detection, split transport, transaction ids, boot2 selection,
+assumed flash size, board config. Every one identical. That was the signal it was
+not the QMK version, and I should have reached the hardware conclusion sooner.
+
+**Practical outcome:** the left controller needs replacing. The right half is
+fine and runs v6.
+
+**Reverted:** the LED test (WS2812 on GP16, PIO1) and the EE_HANDS experiment.
+config.h is back to MASTER_RIGHT.
