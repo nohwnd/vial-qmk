@@ -2,17 +2,17 @@
 
 The board mounts as a mass-storage device labelled RPI-RP2 and reboots by
 itself once the .uf2 has been written, so the copy is the whole flash.
+
+    python flash-when-ready.py NEW_RIGHT.uf2
+    python flash-when-ready.py NEW_LEFT.uf2 --seconds 60
 """
 
+import argparse
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
-
-import subprocess
-
-FIRMWARE = Path(__file__).with_name("fiddly_vial_v3.uf2")
-TIMEOUT_SECONDS = 900
 
 
 def find_bootloader_drive():
@@ -28,26 +28,38 @@ def find_bootloader_drive():
 
 
 def main():
-    if not FIRMWARE.exists():
-        sys.exit(f"Firmware not found: {FIRMWARE}")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("firmware", help="the .uf2 to copy")
+    parser.add_argument("--seconds", type=int, default=900,
+                        help="how long to wait for the drive")
+    args = parser.parse_args()
 
-    print(f"Waiting for the RPI-RP2 drive, up to {TIMEOUT_SECONDS}s.")
-    print("Press the right thumb key now.\n")
+    firmware = Path(args.firmware)
+    if not firmware.exists():
+        beside_script = Path(__file__).with_name(firmware.name)
+        if beside_script.exists():
+            firmware = beside_script
+        else:
+            sys.exit(f"Firmware not found: {args.firmware}")
 
-    deadline = time.time() + TIMEOUT_SECONDS
+    print(f"Firmware: {firmware} ({firmware.stat().st_size} bytes)")
+    print(f"Waiting for the RPI-RP2 drive, up to {args.seconds}s.")
+    print("Hold ` on the left half or 6 on the right and plug the cable in,")
+    print("or run enter-bootloader.py for the half that already has it.\n")
+
+    deadline = time.time() + args.seconds
     while time.time() < deadline:
         drive = find_bootloader_drive()
         if drive:
             print(f"Bootloader drive at {drive}")
             time.sleep(1)  # let the mount settle before writing
-            target = Path(drive) / FIRMWARE.name
-            shutil.copy2(FIRMWARE, target)
-            print(f"Copied {FIRMWARE.name} ({FIRMWARE.stat().st_size} bytes)")
+            shutil.copy2(firmware, Path(drive) / firmware.name)
+            print(f"Copied {firmware.name}")
             print("The half reboots on its own once the write completes.")
             return
         time.sleep(1)
 
-    print("Timed out. The drive never appeared.")
+    sys.exit("Timed out. The drive never appeared.")
 
 
 if __name__ == "__main__":

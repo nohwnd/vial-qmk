@@ -28,7 +28,7 @@ LAYER_NAMES = {0: "BASE", 1: "NAV / FUNKCE", 2: "VRSTVA 2", 3: "VRSTVA 3"}
 
 # Custom keycodes, in the order the enum in keymap.c declares them.
 CUSTOM_BASE = 0x7E00
-CUSTOM = ["ALT_TAB", "ALT_SHIFT_TAB", "CTRL_TAB", "CTRL_SHIFT_TAB", "GRV_DICT"]
+CUSTOM = ["ALT_TAB", "ALT_SHIFT_TAB", "CTRL_TAB", "CTRL_SHIFT_TAB", "DICTATE", "ENT_DICT"]
 
 BASIC = {
     0x28: "KC_ENT", 0x29: "KC_ESC", 0x2A: "KC_BSPC", 0x2B: "KC_TAB", 0x2C: "KC_SPACE",
