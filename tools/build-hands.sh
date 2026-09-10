@@ -22,14 +22,23 @@ if ! grep -q "^#define EE_HANDS" "$QMK_USERSPACE/keyboards/fiddly/config.h"; the
     exit 1
 fi
 
-# vial-qmk is a disposable clone, so the patch has to be reapplied after each
-# re-clone. Without it a noisy split wire can deadlock the firmware.
-if grep -A3 "^inline void serial_transport_driver_clear" \
-    "$QMK_HOME/platforms/chibios/drivers/vendor/RP/RP2040/serial_vendor.c" \
-    | grep -q "while (!pio_sm_is_rx_fifo_empty"; then
-    echo "WARNING: patches/0001-bound-pio-clear-loop.patch is not applied to $QMK_HOME" >&2
-    echo "         run: cd $QMK_HOME && git apply $QMK_USERSPACE/patches/*.patch" >&2
-fi
+# vial-qmk is a disposable clone, so the patches have to be reapplied after
+# every re-clone. Applying them here rather than warning means a rebuild cannot
+# quietly drop one, which is how the board ended up running a firmware without
+# the fix for the split wire deadlock.
+shopt -s nullglob
+for patch in "$QMK_USERSPACE"/patches/*.patch; do
+    name=$(basename "$patch")
+    if git -C "$QMK_HOME" apply --reverse --check "$patch" 2>/dev/null; then
+        echo "patch already applied: $name"
+    elif git -C "$QMK_HOME" apply "$patch" 2>/dev/null; then
+        echo "patch applied: $name"
+    else
+        echo "cannot apply $name to $QMK_HOME, refusing to build" >&2
+        exit 1
+    fi
+done
+shopt -u nullglob
 
 cp "$KEYMAP_CFG" /tmp/keymap_config.h.bak
 trap 'cp /tmp/keymap_config.h.bak "$KEYMAP_CFG"' EXIT
