@@ -15,14 +15,15 @@ enum custom_keycodes {
   ALT_SHIFT_TAB,
   CTRL_TAB,
   CTRL_SHIFT_TAB,
-  GRV_DICT, // USER04: tap = `, hold = drzene Ctrl+Space pro diktovani
+  DICTATE, // USER04: tap = space, double tap = enter, hold = held Ctrl+Space
+  ENT_DICT, // USER05: tap = enter, hold = held Ctrl+Space, for the left hand
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* 0: BASE */
     [0] = LAYOUT_split_3x6_3(
         // leva pulka
-        GRV_DICT       , KC_1           , KC_2           , KC_3           , KC_4           , KC_5           , XXXXXXX,
+        KC_GRV         , KC_1           , KC_2           , KC_3           , KC_4           , KC_5           , XXXXXXX,
         KC_TAB         , KC_Q           , KC_W           , KC_E           , KC_R           , KC_T           , XXXXXXX,
         KC_LCTL        , KC_A           , KC_S           , KC_D           , KC_F           , KC_G           , XXXXXXX,
         KC_LSFT        , KC_Z           , KC_X           , KC_C           , KC_V           , KC_B           , XXXXXXX,
@@ -33,16 +34,16 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_Y           , KC_U           , KC_I           , KC_O           , KC_P           , KC_LBRC        , KC_RBRC,
         KC_H           , KC_J           , KC_K           , KC_L           , KC_SCLN        , KC_QUOT        , KC_BSLS,
         KC_N           , KC_M           , KC_COMM        , KC_DOT         , KC_SLSH        , KC_RSFT        , KC_ESC,
-        XXXXXXX        , LT(1, KC_SPACE), KC_LCTL        , KC_LALT        , XXXXXXX        , XXXXXXX        , XXXXXXX
+        XXXXXXX        , DICTATE        , KC_LCTL        , KC_LALT        , XXXXXXX        , XXXXXXX        , XXXXXXX
     ),
 
     /* 1: NAV / FUNKCE */
     [1] = LAYOUT_split_3x6_3(
         // leva pulka
         _______         , KC_F1           , KC_F2           , KC_F3           , KC_F4           , KC_F5           , XXXXXXX,
-        _______         , KC_ESC          , LCTL(LSFT(KC_P)), CTRL_SHIFT_TAB  , CTRL_TAB        , LCTL(KC_T)      , XXXXXXX,
-        KC_LCTL         , LCTL(KC_A)      , LCTL(KC_S)      , LCTL(KC_C)      , LCTL(KC_V)      , ALT_TAB         , XXXXXXX,
-        _______         , LCTL(KC_Z)      , LCTL(KC_X)      , _______         , LGUI(KC_V)      , ALT_SHIFT_TAB   , XXXXXXX,
+        ALT_TAB         , KC_ESC          , LCTL(LSFT(KC_P)), CTRL_SHIFT_TAB  , CTRL_TAB        , LCTL(KC_T)      , XXXXXXX,
+        KC_LCTL         , LCTL(KC_A)      , LCTL(KC_S)      , LCTL(KC_C)      , LCTL(KC_V)      , ENT_DICT        , XXXXXXX,
+        _______         , LCTL(KC_Z)      , LCTL(KC_X)      , _______         , LGUI(KC_V)      , _______         , XXXXXXX,
         XXXXXXX         , XXXXXXX         , _______         , _______         , _______         , XXXXXXX         , XXXXXXX,
 
         // prava pulka
@@ -99,10 +100,24 @@ bool is_ctrl_tab_active = false;
 bool is_ctrl_shift_tab_active = false;
 uint16_t hold_timer = 0;
 
-// Push-to-talk dictation on the grave key.
-static bool     grv_pressed   = false;
-static bool     grv_dictating = false;
-static uint16_t grv_timer     = 0;
+// Push-to-talk dictation on the right thumb key.
+static bool     dict_pressed = false;  // key is down right now
+static bool     dict_active  = false;  // Ctrl+Space is being held
+static uint16_t dict_timer   = 0;      // when the key went down
+static bool     tap_pending  = false;  // a tap is waiting to see if a second follows
+static uint16_t tap_timer    = 0;      // when that tap was released
+
+// The same thing on layer 1, so enter and dictation are reachable with the
+// left hand alone while the right hand is on the mouse.
+static bool     ent_pressed  = false;
+static bool     ent_active   = false;
+static uint16_t ent_timer    = 0;
+
+/* Own terms rather than TAPPING_TERM, which is the compile time 200 while the
+ * tuning in EEPROM runs the layer key at 400. This key is not a layer key and
+ * should not follow it. */
+#define DICT_HOLD_TERM 200  // held longer than this starts dictation
+#define DICT_TAP_TERM  250  // a second tap within this sends enter
 
 #define HOLD_TIMER 750
 
@@ -176,22 +191,53 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       }
       break;
 
-    /* Tap sends a grave. Holding past the tapping term presses Ctrl+Space and
-     * keeps it down until release, which is what push-to-talk dictation needs:
-     * the combo has to read as held, not as a single press. */
-    case GRV_DICT:
+    /* The right thumb space key, which used to be a second LT(1, KC_SPACE).
+     * The layer stays on the left thumb, which is the one actually used for it.
+     *
+     *   tap         space
+     *   double tap  enter, so a dictated message can be sent from the same key
+     *   hold        Ctrl+Space held down until release, for push-to-talk
+     *               dictation, which needs the combo held rather than tapped
+     *
+     * The single tap has to wait out DICT_TAP_TERM before it can be sent,
+     * otherwise a double tap would emit a space and then the enter. */
+    case DICTATE:
       if (record->event.pressed) {
-        grv_pressed   = true;
-        grv_dictating = false;
-        grv_timer     = timer_read();
+        dict_pressed = true;
+        dict_active  = false;
+        dict_timer   = timer_read();
       } else {
-        grv_pressed = false;
-        if (grv_dictating) {
+        dict_pressed = false;
+        if (dict_active) {
           unregister_code(KC_SPACE);
           unregister_code(KC_LEFT_CTRL);
-          grv_dictating = false;
+          dict_active = false;
+        } else if (tap_pending && timer_elapsed(tap_timer) <= DICT_TAP_TERM) {
+          tap_pending = false;
+          tap_code(KC_ENTER);
         } else {
-          tap_code(KC_GRAVE);
+          tap_pending = true;
+          tap_timer   = timer_read();
+        }
+      }
+      return false;
+
+    /* Layer 1 on the G key, so the left hand alone can send enter or start
+     * dictation while the right hand is on the mouse. No double tap here, the
+     * tap is already enter, so it can be sent without waiting. */
+    case ENT_DICT:
+      if (record->event.pressed) {
+        ent_pressed = true;
+        ent_active  = false;
+        ent_timer   = timer_read();
+      } else {
+        ent_pressed = false;
+        if (ent_active) {
+          unregister_code(KC_SPACE);
+          unregister_code(KC_LEFT_CTRL);
+          ent_active = false;
+        } else {
+          tap_code(KC_ENTER);
         }
       }
       return false;
@@ -226,8 +272,27 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 
 void matrix_scan_user(void) {
-  if (grv_pressed && !grv_dictating && timer_elapsed(grv_timer) > TAPPING_TERM) {
-    grv_dictating = true;
+  /* Start dictation once the key has been down long enough. A tap that was
+   * still waiting for a partner is sent first, so nothing is swallowed. */
+  if (dict_pressed && !dict_active && timer_elapsed(dict_timer) > DICT_HOLD_TERM) {
+    if (tap_pending) {
+      tap_pending = false;
+      tap_code(KC_SPACE);
+    }
+    dict_active = true;
+    register_code(KC_LEFT_CTRL);
+    register_code(KC_SPACE);
+  }
+
+  /* No second tap arrived in time, so the first one was a plain space. */
+  if (tap_pending && !dict_pressed && timer_elapsed(tap_timer) > DICT_TAP_TERM) {
+    tap_pending = false;
+    tap_code(KC_SPACE);
+  }
+
+  /* Same hold, on the layer 1 key, which sends enter rather than space. */
+  if (ent_pressed && !ent_active && timer_elapsed(ent_timer) > DICT_HOLD_TERM) {
+    ent_active = true;
     register_code(KC_LEFT_CTRL);
     register_code(KC_SPACE);
   }

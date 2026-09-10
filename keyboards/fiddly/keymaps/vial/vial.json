@@ -25,9 +25,14 @@
       "shortName": "CtrlST"
     },
     {
-      "name": "GRV_DICT",
-      "title": "Grave / hold to dictate (Ctrl+Space)",
+      "name": "DICTATE",
+      "title": "Space / double tap enter / hold to dictate (Ctrl+Space)",
       "shortName": "Dict"
+    },
+    {
+      "name": "ENT_DICT",
+      "title": "Enter / hold to dictate (Ctrl+Space)",
+      "shortName": "EntDict"
     }
   ],
   "layouts": {
