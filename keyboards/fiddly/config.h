@@ -25,14 +25,19 @@
 // #define WS2812_BYTE_ORDER WS2812_BYTE_ORDER_RGB
 // #define RGB_MATRIX_DEFAULT_VAL 32
 
-// The default sym_defer_pk waits out the whole debounce window after the last
-// transition, so every keypress carries that delay. sym_eager_pk reports the
-// press immediately and then ignores the pin for the window instead, which
-// keeps the chatter filtering that a bare DEBOUNCE 5 lost (it made 's' repeat)
-// while removing the latency.
+// A bare DEBOUNCE 5 lost the chatter filtering and made 's' repeat on its own.
+// sym_eager_pk was tried to get the latency back, but it reports the press on
+// the first transition, so the bounce went through as a second press and 'b'
+// and 'r' doubled. The stock sym_defer_pk waits the window out and reports once.
 #define DEBOUNCE 10
 
-#define MASTER_RIGHT
+// Handedness is stored in EEPROM, written once on first boot from
+// INIT_EE_HANDS_LEFT/RIGHT in the keymap config. MASTER_RIGHT used to derive it
+// from usb_bus_detected(), so whichever half held the cable acted as the right
+// one and switched to the right-hand pin set. On the left half those pins do
+// not match its wiring, its matrix never scanned, and bootmagic on tilde could
+// never work there. Build one firmware per half with tools/build-hands.sh.
+#define EE_HANDS
 
 // Pick good defaults for enabling homerow modifiers
 #define TAPPING_TERM 200
