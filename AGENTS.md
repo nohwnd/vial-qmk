@@ -95,8 +95,11 @@ File an issue, make the change on a branch, open a pull request, merge it. The
 repo is the record of why things are the way they are, and that only works if
 the reasoning lands in the commit and the pull request rather than in a chat.
 
-`archive-2025-qmk-fork` holds the January 2025 full QMK tree this repo used to
-be. Its history was truncated at some point, which left it with no common
-ancestor with upstream, so it can never be merged or updated again. Nothing
-depends on it. vial-qmk is now cloned fresh and kept disposable instead, which
-is why `patches/` and External Userspace exist.
+`patches/` and External Userspace exist because vial-qmk is cloned fresh and
+kept disposable. This repo once was a full fork of it, with the history
+truncated to save space, which left it with no common ancestor with upstream
+and so unable to merge or update ever again. That is the mistake the current
+arrangement avoids, and the reason nothing here should grow back into a fork.
+
+Upstream freshness is a vial-kb question, not one for this repo. vial-qmk
+trails plain QMK, and building against newer QMK would mean giving up Vial.
