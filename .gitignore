@@ -4,3 +4,5 @@
 *.hex
 .probe-env.sh
 .setup-venv.sh
+__pycache__/
+*.pyc
