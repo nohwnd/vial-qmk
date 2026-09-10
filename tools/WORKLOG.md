@@ -303,3 +303,31 @@ fine and runs v6.
 
 **Reverted:** the LED test (WS2812 on GP16, PIO1) and the EE_HANDS experiment.
 config.h is back to MASTER_RIGHT.
+
+---
+
+## 2026-09-10 11:06 — settled: the left controller is faulty, not the code
+
+Built the exact January 2025 firmware from the old fork, unmodified, and flashed
+it to the left half. It does not enumerate, exactly like every firmware built
+here. That firmware demonstrably worked on this half yesterday.
+
+| Firmware | Left half |
+| --- | --- |
+| ORIGINAL January 2025, unmodified | does not come up |
+| BASELINE, before any change here | does not come up |
+| v6, MASTER_LEFT, 10s USB timeout | does not come up |
+
+The only thing that changed between it working and not is that the case was
+opened. Jakub was right to push back on my code-level theories; I should have
+built this reference firmware hours earlier instead of diffing trees.
+
+**One real fix came out of the search:** bootmagic on the left half checked
+matrix position [0, 0], and a boot-time misread there erased the EEPROM and
+jumped to the bootloader on every boot, which is why the half kept reappearing
+as mass storage. Its check now points at [4, 6], where column 6 is NO_PIN and
+can never read as pressed. The right half keeps [5, 0], the key that types 6.
+
+**State:** right half works on v6. Left half needs its controller replaced.
+config.h is back to MASTER_RIGHT; the EE_HANDS, LED and MASTER_LEFT experiments
+are all reverted.
