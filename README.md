@@ -90,6 +90,22 @@ re-cloned to update. It lives in the WSL filesystem because building over
 /mnt (9p) is roughly 20x slower.
 
 ```bash
+tools/update-qmk.sh --check    # compare the clone against upstream
+tools/update-qmk.sh            # create or update it
+tools/build-hands.sh           # build both halves
+```
+
+`update-qmk.sh` does the clone, the submodules, the symlink and the qmk config,
+and refuses to replace a working clone if a patch no longer applies. The old
+clone is kept as `~/p/vial-qmk.old` until a build proves the new one works.
+
+That is the whole update procedure. There is no merge and no conflict to
+resolve, because nothing here is a fork of vial-qmk.
+
+<details>
+<summary>What the script does, if it ever needs doing by hand</summary>
+
+```bash
 git clone --depth 1 --single-branch --branch vial \
     https://github.com/vial-kb/vial-qmk.git ~/p/vial-qmk
 cd ~/p/vial-qmk
@@ -103,22 +119,18 @@ ln -sfn ~/p/fiddly/keyboards/fiddly ~/p/vial-qmk/keyboards/fiddly
 qmk config user.qmk_home=~/p/vial-qmk
 qmk config user.overlay_dir=~/p/fiddly
 
+# Without this a noisy split wire can deadlock the firmware.
+git apply ~/p/fiddly/patches/*.patch
+
 cd ~/p/vial-qmk && make fiddly:vial
 ```
 
-Output lands in `~/p/fiddly/fiddly_vial.uf2`, built for whichever half the
-keymap config currently names. To get both, use `tools/build-hands.sh`, see
-[Flashing](#flashing) below.
+</details>
 
-Reapply the patch after every re-clone, otherwise a noisy split wire can
-deadlock the firmware:
-
-```bash
-cd ~/p/vial-qmk && git apply ~/p/fiddly/patches/*.patch
-```
-
-`tools/build-hands.sh` does this itself and stops if a patch does not apply, so
-the plain `make` above is the only route that can silently miss it.
+A plain `make fiddly:vial` builds for whichever half the keymap config currently
+names, and does not apply `patches/`. `tools/build-hands.sh` builds both halves
+and applies the patches itself, stopping if one does not apply, so it is the
+route to prefer.
 
 ## Flashing quickly
 
@@ -259,13 +271,20 @@ reports what the firmware believes, and the firmware was right the whole time.
 
 ## Tools
 
-All of these need `pip install pywinusb`. Except for the two `watch-hid-*.py`
-they talk to the board over the VIA raw-HID protocol, and address keys as
-(layer, row, column) resolved firmware-side, so they do not depend on what
-`vial.json` declares. The `watch-hid-*.py` pair are the odd ones out: they
-listen on a Windows keyboard hook, so they show what applications receive
-rather than what the board thinks it sent, which is what makes them useful for
-checking a macro.
+The shell scripts run in WSL and drive the build:
+
+| Tool | Purpose |
+| --- | --- |
+| `update-qmk.sh` | Create or update the vial-qmk clone. `--check` compares versions only. |
+| `build-hands.sh` | Build both halves, applying `patches/` first. |
+
+The Python tools run on Windows and need `pip install pywinusb`. Except for the
+two `watch-hid-*.py` they talk to the board over the VIA raw-HID protocol, and
+address keys as (layer, row, column) resolved firmware-side, so they do not
+depend on what `vial.json` declares. The `watch-hid-*.py` pair are the odd ones
+out: they listen on a Windows keyboard hook, so they show what applications
+receive rather than what the board thinks it sent, which is what makes them
+useful for checking a macro.
 
 | Tool | Purpose |
 | --- | --- |
