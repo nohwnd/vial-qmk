@@ -32,12 +32,6 @@
     },
     "split": {
         "enabled": true,
-        "bootmagic": {
-            "matrix": [
-                5,
-                0
-            ]
-        },
         "serial": {
             "driver": "vendor",
             "pin": "GP26"
@@ -61,6 +55,12 @@
                     "GP8"
                 ]
             }
+        },
+        "bootmagic": {
+            "matrix": [
+                5,
+                0
+            ]
         }
     },
     "processor": "RP2040",
@@ -638,8 +638,8 @@
     },
     "bootmagic": {
         "matrix": [
-            4,
-            6
+            0,
+            0
         ]
     }
 }

@@ -53,12 +53,23 @@ qmk config user.overlay_dir=~/p/fiddly
 cd ~/p/vial-qmk && make fiddly:vial
 ```
 
-Output lands in `~/p/fiddly/fiddly_vial.uf2`.
+Output lands in `~/p/fiddly/fiddly_vial.uf2`, built for whichever half the
+keymap config currently names. To get both, use `tools/build-hands.sh`, see
+[Flashing](#flashing) below.
 
-## Flashing
+Reapply the patch after every re-clone, otherwise a noisy split wire can
+deadlock the firmware:
+
+```bash
+cd ~/p/vial-qmk && git apply ~/p/fiddly/patches/*.patch
+```
+
+## Flashing quickly
 
 Hold BOOTSEL, plug in the half, drag the .uf2 onto the `RPI-RP2` drive.
 The RP2040 bootloader is in mask ROM, so a bad firmware cannot brick the board.
+The full story, including which key replaces BOOTSEL on each half, is under
+[Flashing](#flashing).
 
 ## Keeping the repo and the board in sync
 
@@ -99,14 +110,24 @@ Other tools:
 
 ### Which half can reach the bootloader
 
-`MASTER_RIGHT` derives handedness from `usb_bus_detected()`, so whichever
-half holds the USB cable acts as the right one and switches to the right
-pin set. On the left half that pin set does not match the wiring, so its
-matrix does not scan and neither bootmagic nor a QK_BOOT key can work
-there - the left half needs its physical BOOTSEL button.
+Both of them, since the move to `EE_HANDS`.
 
-The right half is fine: `split.bootmagic.matrix` is now `[5, 0]`, so
-holding the key that types `6` while plugging in enters the bootloader.
+| half | how |
+| --- | --- |
+| left | hold the key that types `` ` `` while plugging in |
+| right | hold the key that types `6` while plugging in |
+
+`EE_HANDS` keeps the handedness in EEPROM, so a half knows what it is before
+its matrix is set up and scans the pins that match its own wiring. Bootmagic
+then reads a real key on either side. `bootmagic.matrix` is `[0, 0]` for the
+left half and `split.bootmagic.matrix` is `[5, 0]` for the right, because split
+gives the right half rows 5-9.
+
+This did not work under `MASTER_RIGHT`, which derived handedness from
+`usb_bus_detected()`. Whichever half held the cable acted as the right one and
+switched to the right pin set, so on the left half the matrix never scanned and
+neither bootmagic nor a QK_BOOT key could work there. That half needed its
+physical BOOTSEL button, which meant opening the case.
 
 ## Tap-hold tuning
 
@@ -153,41 +174,41 @@ firmware-side, so they do not depend on what `vial.json` declares.
 
 ## Flashing
 
-Only the half holding the USB cable is flashed. The other half runs as a slave
-and does not need the same firmware: it only reports its matrix, and the split
-wire format has not changed, so an older slave works against a newer master.
+`EE_HANDS` means the two halves no longer share a firmware, so the build
+produces one file per half:
 
-Enter the bootloader by holding the key that types `6` while plugging in the
-USB cable, then:
+```bash
+tools/build-hands.sh                 # writes fiddly_LEFT.uf2 and fiddly_RIGHT.uf2
+```
+
+They are not interchangeable. Flashing the wrong one makes a half believe it is
+the other one, and its matrix stops matching its wiring.
+
+Only the half holding the USB cable is flashed, so each one is done in turn.
+Hold `` ` `` on the left or `6` on the right while plugging in, then:
 
 ```bash
 python tools/flash-when-ready.py
 ```
 
-### Only the right half can do that
-
-`MASTER_RIGHT` derives handedness from `usb_bus_detected()`, so whichever half
-holds the cable acts as the right one and switches to the right-hand pin set.
-On the left half those pins do not match its wiring, so its matrix never scans
-and no key can trigger anything during early init. The left half needs its
-physical BOOTSEL button.
-
-`split.bootmagic.matrix` is `[5, 0]` because bootmagic checks row 0 by default,
-and split gives the right half rows 5-9; row 0 there is the other hand's slot
-and is empty at that point.
+Changes to key handling only need the right half. The master runs
+`process_record_user` for keys on both halves, and the left half only reports
+its matrix over the split wire, so a keymap or macro change takes effect once
+the master has it. Handedness, pin mapping and bootmagic are per half, and those
+need both.
 
 The RP2040 bootloader is in mask ROM, so a bad firmware cannot brick the board.
 
 ## Debounce
 
-`DEBOUNCE` is 20 ms, and the default `sym_defer_pk` algorithm is deliberate.
+`DEBOUNCE` is 10 ms, and the default `sym_defer_pk` algorithm is deliberate.
 
 A switch does not close cleanly: the contacts bounce for a few milliseconds and
 the firmware would read that as several presses. The debounce window is how long
 the pin is ignored after a transition, so it sets the shortest gap between two
 presses of the same key that still registers as two.
 
-At 20 ms that gap is far below what a finger can do. Deliberate double taps land
+At 10 ms that gap is far below what a finger can do. Deliberate double taps land
 around 60 to 80 ms, so nothing reachable by hand is lost.
 
 The value has moved around, and both directions were wrong:
@@ -198,7 +219,7 @@ The value has moved around, and both directions were wrong:
   ignores the pin, which cuts the input delay. On these switches it let the
   bounce through, and `b` and `r` started doubling. It is now removed.
 
-So the cost of 20 ms is 20 ms of input delay per press, and the benefit is that
+So the cost of 10 ms is 10 ms of input delay per press, and the benefit is that
 no key repeats by itself. If a key ever doubles again, that is a contact problem
 to fix with a soldering iron rather than a longer window.
 
